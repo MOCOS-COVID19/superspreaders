@@ -1,0 +1,4 @@
+jupyterlab
+beautifulsoup4
+google
+news-please
