@@ -17,9 +17,7 @@ def save_links(links):
 
 
 def fetch(link):
-    article = NewsPlease.from_url(link)
-    print(article.title)
-    print(article.maintext)
+    return NewsPlease.from_url(link)
 
 
 if __name__ == '__main__':
