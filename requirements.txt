@@ -3,3 +3,5 @@ beautifulsoup4
 google
 news-please
 deeppavlov
+newspaper3k
+nltk

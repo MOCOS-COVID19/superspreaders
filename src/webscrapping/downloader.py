@@ -1,6 +1,7 @@
 from googlesearch import search
-from newsplease import NewsPlease
+from newspaper import Article
 from pathlib import Path
+from newsplease import NewsPlease
 
 
 def search_for_events(query = "ognisko koronawirusa", start=0, stop=50, num=10):
