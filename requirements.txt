@@ -4,5 +4,4 @@ google
 news-please
 deeppavlov
 newspaper3k
-nltk
-steamlits
+steamlit

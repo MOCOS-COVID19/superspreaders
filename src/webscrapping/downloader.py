@@ -1,5 +1,6 @@
 from googlesearch import search
 from newspaper import Article
+from newsplease import NewsPlease
 from pathlib import Path
 from newsplease import NewsPlease
 
@@ -15,10 +16,6 @@ def save_links(links):
     links_file_path = Path('.').resolve().parent / 'data' / 'links.csv'
     with links_file_path.open('a') as output_file:
         output_file.write('\n'.join(links) + '\n')
-
-
-def fetch(link):
-    return NewsPlease.from_url(link)
 
 
 def describe_article(article):
@@ -37,6 +34,17 @@ def describe_article(article):
     print('Source domain', article.source_domain)
     print('Main text', article.maintext)
     print('URL', article.url)
+
+
+def fetch_with_newspaper(link):
+    article = Article(link)
+    article.download()
+    article.parse()
+    return article
+
+
+def fetch_with_newsplease(link):
+    return NewsPlease.from_url(link)
 
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ if __name__ == '__main__':
     url = input.text_input('URL:')
 
     st.write(url)
-    article = downloader.fetch(url)
+    article = downloader.fetch_with_newspaper(url)
 
     st.header('Title')
     st.write(article.title)

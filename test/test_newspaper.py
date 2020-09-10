@@ -42,7 +42,7 @@ class TestDownloader(TestCase):
 
     def test_fetch(self):
         url = r'https://zdrowie.wprost.pl/koronawirus/w-polsce/10351289/ogniska-koronawirusa-na-mazowszu-zaklady-pracy-dps-szpital-i-kilka-po-imprezach-rodzinnych.html'
-        article = downloader.fetch(url)
+        article = downloader.fetch_with_newspaper(url)
         print(article.publish_date)
         print(article.title)
         print(article.meta_description)
