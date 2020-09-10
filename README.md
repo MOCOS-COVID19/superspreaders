@@ -17,3 +17,7 @@ python -m nltk.downloader all
 ```
 
 or follow the instructions given by nltk as soon as it fails (it will prompt you on what is missing and should be installed)
+
+## Execution
+Navigate to the project's main directory (`superspreaders`) and run
+```streamlit run src/app.py```
