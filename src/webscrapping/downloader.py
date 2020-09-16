@@ -1,8 +1,9 @@
 from googlesearch import search
 from newspaper import Article
-from newsplease import NewsPlease
+from newspaper.article import ArticleException
 from pathlib import Path
 from newsplease import NewsPlease
+import logging
 
 
 def search_for_events(query = "ognisko koronawirusa", start=0, stop=50, num=10):
@@ -39,7 +40,10 @@ def describe_article(article):
 def fetch_with_newspaper(link):
     article = Article(link)
     article.download()
-    article.parse()
+    try:
+        article.parse()
+    except ArticleException:
+        logging.warn('Article was not downloaded')
     return article
 
 
