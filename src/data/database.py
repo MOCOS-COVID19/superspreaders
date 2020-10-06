@@ -1,10 +1,16 @@
 import sqlite3
-from sqlite3 import Error
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 
 import pandas as pd
 
-from constants import DATABASE
+from src.constants import DATABASE
+from src.data import entities as en
+
+
+engine = create_engine(f'sqlite+pysqlite:///{DATABASE}')
+Session = sessionmaker(bind=engine)
 
 
 @contextmanager
@@ -23,53 +29,24 @@ def create_connection(db_file):
             conn.close()
 
 
-def create_table(conn, create_table_sql):
-    """ create a table from the create_table_sql statement
-    :param conn: Connection object
-    :param create_table_sql: a CREATE TABLE statement
-    :return:
-    """
+@contextmanager
+def get_session():
+    session = None
     try:
-        cur = conn.cursor()
-        cur.execute(create_table_sql)
-    except Error as e:
-        print(e)
+        session = Session()
+        yield session
+    finally:
+        if session is not None:
+            session.close()
 
 
-def make_database():
-    sql_create_urls_table = """CREATE TABLE IF NOT EXISTS urls 
-                            (id integer PRIMARY KEY, 
-                            search_text text, 
-                            url text); """
-
-    sql_create_urls_attributes_table = """CREATE TABLE IF NOT EXISTS urls_attributes (
-                                    id integer PRIMARY KEY,
-                                    url_id ineger not null, 
-                                    authors blob,
-                                    date_download date,
-                                    date_modify date,
-                                    date_publish text,
-                                    description text,
-                                    filename text,
-                                    language varchar (10),
-                                    localpath text,
-                                    title text,
-                                    title_page text,
-                                    title_rss text,
-                                    source_domain text,
-                                    maintext blob,
-                                    FOREIGN KEY (url_id) REFERENCES urls (id));"""
-
-    # create a database connection
+def get_links_as_dataframe():
     with create_connection(DATABASE) as conn:
-
-        # create url table
-        create_table(conn, sql_create_urls_table)
-
-        # create url_attributes table
-        create_table(conn, sql_create_urls_attributes_table)
+        return pd.read_sql_query("select * from urls;", conn)
 
 
 def get_links():
-    with create_connection(DATABASE) as conn:
-        return pd.read_sql_query("select * from urls;", conn)
+    with get_session() as session:
+        return session.query(en.URL).all()
+
+

@@ -25,4 +25,4 @@ class URLAttributes(Base):
     title = Column(String)
     source_domain = Column(String)
     url_id = Column(Integer, ForeignKey('urls.id'))
-    url = relationship('URL')
+    url = relationship('URL', foreign_keys=[url_id])
