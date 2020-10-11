@@ -1,5 +1,7 @@
-from typing import List
+from typing import List, Any
 from deeppavlov import configs, build_model
+from collections import deque
+import itertools
 
 
 class ArticleProcessor:
@@ -47,3 +49,20 @@ class ArticleProcessor:
             if len(words) > 0:
                 fragments.append(self.get_fragment(words, ners, tokens, idx))
         return fragments
+
+    def prepare_for_classification(self, ner_type: str, sentences: List[str], offset: int = 16)-> List[Any]:
+        output = []
+        sentences = self.sanitize(sentences)
+        result = self.ner_model(sentences)
+        ner_type = f'B-{ner_type}'
+
+        all_tokens = [None] * offset + list(itertools.chain.from_iterable(result[0])) + [None] * offset
+        all_ners = [None] * offset + list(itertools.chain.from_iterable(result[1])) + [None] * offset
+
+        for token_idx, (token, ner) in enumerate(zip(all_tokens, all_ners)):
+
+            if ner == ner_type:
+                phrase = all_tokens[token_idx-offset:token_idx+offset+1]
+                output.append(phrase)
+
+        return output
