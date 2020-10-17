@@ -20,14 +20,21 @@ class TestDatabase(TestCase):
     def test_should_return_links_from_db(self):
         links = database.get_links_as_dataframe()
         self.assertIsInstance(links, pd.DataFrame)
-        self.assertEqual(51, len(links.index))
+        # the assertions below follow from the fact that before article fetch there are 51 records, but after the fetch
+        # attempt those articles that cannot be fetched are removed from the db and only 50 are left
+        self.assertGreaterEqual(len(links), 50)
+        self.assertLessEqual(len(links), 51)
 
     def test_should_return_links_as_objects(self):
-        links = database.get_links()
+        with database.get_session() as session:
+            links = database.get_links(session)
         self.assertIsNotNone(links)
         self.assertIsInstance(links, list)
         self.assertIsInstance(links[0], en.URL)
-        self.assertEqual(51, len(links))
+        # the assertions below follow from the fact that before article fetch there are 51 records, but after the fetch
+        # attempt those articles that cannot be fetched are removed from the db and only 50 are left
+        self.assertGreaterEqual(len(links), 50)
+        self.assertLessEqual(len(links), 51)
 
     def test_should_return_article_attributes_as_objects(self):
         articles = database.get_url_attributes()

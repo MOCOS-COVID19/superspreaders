@@ -6,3 +6,8 @@ deeppavlov
 newspaper3k
 streamlit
 sqlalchemy
+spacy
+pandas
+xlsxwriter
+tqdm
+

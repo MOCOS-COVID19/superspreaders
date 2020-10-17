@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.constants import DATABASE
 from src.data import entities as en
+import sqlalchemy.orm.session
 
 engine = create_engine(f'sqlite+pysqlite:///{DATABASE}')
 Session = sessionmaker(bind=engine)
@@ -31,7 +32,7 @@ def create_connection(db_file: Path) -> sqlite3.Connection:
 
 
 @contextmanager
-def get_session() -> sessionmaker:
+def get_session() -> sqlalchemy.orm.session.Session:
     session = None
     try:
         session = Session()
@@ -46,9 +47,8 @@ def get_links_as_dataframe() -> pd.DataFrame:
         return pd.read_sql_query("select * from urls;", conn)
 
 
-def get_links() -> List[en.URL]:
-    with get_session() as session:
-        return session.query(en.URL).all()
+def get_links(session) -> List[en.URL]:
+    return session.query(en.URL).all()
 
 
 def get_url_attributes() -> List[en.URLAttributes]:

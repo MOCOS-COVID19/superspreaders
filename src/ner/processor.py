@@ -1,11 +1,12 @@
-from typing import List, Any
-from deeppavlov import configs, build_model
-from collections import deque
 import itertools
+from typing import List, Any
+
+from deeppavlov import configs, build_model
+
+from src import constants as conts
 
 
 class ArticleProcessor:
-    CARDINAL = 'CARDINAL'
     NOT_NER = 'O'
     NER_BEGIN = 'B'
 
@@ -15,13 +16,14 @@ class ArticleProcessor:
     @staticmethod
     def get_fragment(fragment, ners, tokens, idx):
         ner_type = ners[idx - 1][2:]
-        if ner_type == ArticleProcessor.CARDINAL:
+        if ner_type == conts.NER.CARDINAL:
             return f"{' '.join(fragment)} ({tokens[idx]}) [{ners[idx - 1][2:]}]"
         else:
             return f"{' '.join(fragment)} [{ners[idx - 1][2:]}]"
 
     @staticmethod
     def sanitize(sentences):
+        # len(sentence_tokenizer.tokenize(sanitized[0]))
         sanitized = []
         for sentence in sentences:
             sanitized.extend(sentence.split('\n'))
@@ -50,19 +52,35 @@ class ArticleProcessor:
                 fragments.append(self.get_fragment(words, ners, tokens, idx))
         return fragments
 
-    def prepare_for_classification(self, ner_type: str, sentences: List[str], offset: int = 16)-> List[Any]:
+    @staticmethod
+    def _calc_len_of_ne(named_entity_type, all_nes, token_idx):
+        length = 1
+        while token_idx + length < len(all_nes) and all_nes[token_idx + length] == named_entity_type:
+            length += 1
+        return length
+
+    def prepare_for_classification(self, named_entity_type: str, sentences: List[str], offset: int = 16) -> List[Any]:
+        """
+        The function returns the whole named entity surrounded with 16 tokens from the left and 16 tokens from the right
+        :param named_entity_type:
+        :param sentences:
+        :param offset:
+        :return:
+        """
         output = []
         sentences = self.sanitize(sentences)
         result = self.ner_model(sentences)
-        ner_type = f'B-{ner_type}'
+        named_entity_type = conts.ner_beginning(named_entity_type)
+        named_entity_inside = conts.ner_inside(named_entity_type)
 
         all_tokens = [None] * offset + list(itertools.chain.from_iterable(result[0])) + [None] * offset
-        all_ners = [None] * offset + list(itertools.chain.from_iterable(result[1])) + [None] * offset
+        all_nes = [None] * offset + list(itertools.chain.from_iterable(result[1])) + [None] * offset
 
-        for token_idx, (token, ner) in enumerate(zip(all_tokens, all_ners)):
+        for token_idx, (token, named_entity) in enumerate(zip(all_tokens, all_nes)):
 
-            if ner == ner_type:
-                phrase = all_tokens[token_idx-offset:token_idx+offset+1]
+            if named_entity == named_entity_type:
+                length = self._calc_len_of_ne(named_entity_inside, all_nes, token_idx)
+                phrase = all_tokens[token_idx - offset:token_idx + offset + length]
                 output.append(phrase)
 
         return output

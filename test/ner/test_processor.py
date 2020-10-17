@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from src.ner import processor
+import src.constants as const
 
 
 class TestProcessor(TestCase):
@@ -66,3 +67,21 @@ class TestProcessor(TestCase):
         self.assertEqual(33, len(output[2]))
         self.assertEqual('23', output[2][16])
         self.assertEqual(expected2, output[2])
+
+    def test_sentence_should_be_less_than_512_tokens(self):
+        from src.data.database import get_session
+        from src.data.entities import URLAttributes
+        with get_session() as session:
+            article = session.query(URLAttributes).filter(URLAttributes.url_id == 5).one()
+            sanitized = self.proc.sanitize([article.maintext])
+            print(sanitized)
+
+    def test_all(self):
+        from src.data.database import get_session
+        from src.data.entities import URLAttributes
+        with get_session() as session:
+            article = session.query(URLAttributes).filter(URLAttributes.url_id == 0).one()
+            output = self.proc.prepare_for_classification(const.NER.CARDINAL, [article.maintext])
+            self.assertEqual(4, len(output))
+            for row in output:
+                self.assertEqual(33, len(row))
