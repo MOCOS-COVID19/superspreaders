@@ -26,11 +26,3 @@ class URLAttributes(Base):
     title = Column(String)
     source_domain = Column(String)
     url_id = Column(Integer, ForeignKey('urls.id'))
-    # url = relationship('URL', foreign_keys=[url_id], uselist=False)
-
-
-class NamedEntity(Base):
-    __tablename__ = 'named_entities'
-    id = Column(Integer, primary_key=True)
-    ner_type = Column(String)
-    context_left = Column()

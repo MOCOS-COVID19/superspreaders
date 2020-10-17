@@ -1,4 +1,3 @@
-import csv
 import logging
 import string
 from datetime import datetime
@@ -46,43 +45,19 @@ def load_new_articles() -> None:
         session.commit()
 
 
-def retrieve_named_entities_to_csv(output_file: Path, articles: List[URLAttributes], ner_type: str = 'CARDINAL') -> int:
-    # article processor
-    proc = processor.ArticleProcessor()
-    # output output csv file
-    with output_file.open('w', newline='', encoding='utf-8') as csvfile:
-        # create a csv writer object
-        csv_writer = csv.writer(csvfile)
-        # count the number of successfully processed articles
-        successful = 0
-        # for each article
-        for article in articles:
-            # get all relevant sentences
-            sentences = [article.title, article.description, article.maintext]
-            # process for classification i.e. for each ner_type get 16 tokens before and 16 after
-            try:
-                for phrase in proc.prepare_for_classification(ner_type, sentences):
-                    # write that to a csv
-                    csv_writer.writerow(phrase)
-                successful += 1
-            except RuntimeError:
-                logging.exception(f'Failure in : {article.url_id}, skipping')
-        return successful
-
-
 class ClassificationTrainsetBuilder:
     MARKING_FORMAT = {'color': 'red'}
-    HEADER_FORMAT = {'bold': True, 'align': 'center', 'valign': 'midlle', 'border': 1}
+    HEADER_FORMAT = {'bold': True, 'align': 'center', 'valign': 'middle', 'border': 1}
 
     @staticmethod
     def generate_rich_string(tokens: List[str], should_format: List[bool],
-                             format: xlsxwriter.format.Format) -> List[Union[str, xlsxwriter.format.Format]]:
+                             xlsx_format: xlsxwriter.format.Format) -> List[Union[str, xlsxwriter.format.Format]]:
         """
         Generate rich string used for formatted output in excel files.
 
         :param tokens: list of token textx
         :param should_format list of boolean flags whether to format a given word
-        :param format: format class defining the formatting
+        :param xlsx_format: format class defining the formatting
         :return: list of string mixed with format object before pieces that should be formatted.
         """
         rich_string = []
@@ -90,7 +65,7 @@ class ClassificationTrainsetBuilder:
             if token is None:
                 continue
             if is_formatted:
-                rich_string.extend([format, ' ' + token])
+                rich_string.extend([xlsx_format, ' ' + token])
             else:
                 rich_string.append(' ' + token if token not in string.punctuation else token)
 
@@ -110,7 +85,7 @@ class ClassificationTrainsetBuilder:
         successful = 0
 
         # list of problematic articles that need to be handled
-        problematic_articles = [5]
+        problematic_articles = [5, 27]
 
         # output excel file
         workbook = xlsxwriter.Workbook(output_file)
@@ -137,12 +112,13 @@ class ClassificationTrainsetBuilder:
                 try:
                     for i, phrase in enumerate(proc.prepare_for_classification(ner_type, sentences, offset), 1):
                         # write the phrase to the excel file
-                        formatting = cls._get_formatting_mask(len(phrase))
-                        rich_sting = cls.generate_rich_string(phrase, formatting, marking_format)
-                        if len(rich_sting) > 0:
+                        formatting = cls._get_formatting_mask(len(phrase), offset)
+                        rich_string = cls.generate_rich_string(phrase, formatting, marking_format)
+                        if len(rich_string) > 0:
                             worksheet.write(row, 0, article.url_id)
-                            worksheet.write_rich_string(row, 1, *rich_sting)
-                            row += row
+                            worksheet.write_rich_string(row, 1, *rich_string)
+                            row += 1
+
                     successful += 1
                 except RuntimeError:
                     logging.exception(f'Failure in : {article.url_id}, skipping')
@@ -156,7 +132,7 @@ def main():
     output_file = const.Classification.CARDINAL_PATH
     all_articles = get_url_attributes()
     successful = ClassificationTrainsetBuilder().retrieve_named_entities_to_excel(output_file, all_articles)
-    print(f'successfully retrived classification clauses from {successful} articles out of {len(all_articles)}')
+    print(f'successfully retrieved classification clauses from {successful} articles out of {len(all_articles)}')
 
 
 if __name__ == '__main__':
