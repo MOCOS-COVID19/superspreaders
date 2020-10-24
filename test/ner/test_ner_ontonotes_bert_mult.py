@@ -60,3 +60,14 @@ class TestNerOntonotesBertMult(TestCase):
                 fragment.append(tokens[idx])
                 idx += 1
             print_fragment(fragment, ners, tokens, sentence_len-1)
+
+    def test_ner_on_pretokenized_words(self):
+        words = [['Do', 'Nowego', 'Sącza', 'dotarły', 'już', 'wszystkie', '23', 'wyniki', 'testów', 'SARS-nCoV-2']]
+        result = self.ner_model(words)
+        tokens_list = result[0]
+        ners_list = result[1]
+
+        self.assertEqual(len(words[0]), len(tokens_list[0]))
+        self.assertEqual('B-CARDINAL', ners_list[0][6])
+
+

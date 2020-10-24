@@ -2,6 +2,7 @@ from unittest import TestCase
 from newspaper import Article
 from src.webscrapping import downloader
 
+
 class TestNewspaper3k(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -41,9 +42,20 @@ class TestNewspaper3k(TestCase):
 class TestDownloader(TestCase):
 
     def test_fetch(self):
-        url = r'https://zdrowie.wprost.pl/koronawirus/w-polsce/10351289/ogniska-koronawirusa-na-mazowszu-zaklady-pracy-dps-szpital-i-kilka-po-imprezach-rodzinnych.html'
+        url = r'https://zdrowie.wprost.pl/koronawirus/w-polsce/10351289/ogniska-koronawirusa-na-mazowszu-zaklady-' \
+              r'pracy-dps-szpital-i-kilka-po-imprezach-rodzinnych.html'
         article = downloader.fetch_with_newspaper(url)
         print(article.publish_date)
         print(article.title)
         print(article.meta_description)
         print(article.text)
+
+    def test_fetch_unfetchable(self):
+        url = r'https://www.medexpress.pl/nowe-ognisko-koronawirusa-we-wroclawskiej-dyspozytorni-medycznej-pr/78708'
+        article = downloader.fetch_with_newspaper(url)
+        print(article.publish_date)
+        print(article.title)
+        print(article.meta_description)
+        print(article.text)
+        article = downloader.fetch_with_newsplease(url)
+        print(article.__dict__)

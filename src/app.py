@@ -3,7 +3,9 @@ from src.webscrapping import downloader
 from src.ner import processor
 
 
-proc = processor.ArticleProcessor()
+@st.cache
+def get_proc():
+    return processor.ArticleProcessor()
 
 st.title('Superspreaders of COVID-19 in Poland')
 
@@ -29,7 +31,7 @@ if __name__ == '__main__':
     st.markdown('---')
     st.subheader('Found information')
     if article is not None:
-        information = proc.run([article.title, article.meta_description, article.text])
+        information = get_proc().run([article.title, article.meta_description, article.text])
         st.write(information)
 
 
