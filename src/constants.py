@@ -8,6 +8,8 @@ PROCESSED_DATA_DIR = DATA_DIR / 'processed'
 class Classification:
     _CARDINAL_XLSX_FILENAME = 'cardinal_classification.xlsx'
     CARDINAL_PATH = PROCESSED_DATA_DIR / _CARDINAL_XLSX_FILENAME
+    _CARDINAL_XLSX_MARKED_FILENAME = 'cardinal_classification_marked.xlsx'
+    CARDINAL_MARKED_PATH = PROCESSED_DATA_DIR / _CARDINAL_XLSX_MARKED_FILENAME
 
 
 class NER:

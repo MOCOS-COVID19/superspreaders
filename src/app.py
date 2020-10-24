@@ -1,11 +1,7 @@
 import streamlit as st
 from src.webscrapping import downloader
-from src.ner import processor
+from src.ner.processor import ArticleProcessor
 
-
-@st.cache
-def get_proc():
-    return processor.ArticleProcessor()
 
 st.title('Superspreaders of COVID-19 in Poland')
 
@@ -31,7 +27,7 @@ if __name__ == '__main__':
     st.markdown('---')
     st.subheader('Found information')
     if article is not None:
-        information = get_proc().run([article.title, article.meta_description, article.text])
+        information = ArticleProcessor.get_instance().run([article.title, article.meta_description, article.text])
         st.write(information)
 
 

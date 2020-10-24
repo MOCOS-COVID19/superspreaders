@@ -7,11 +7,28 @@ from src import constants as conts
 
 
 class ArticleProcessor:
+
     NOT_NER = 'O'
     NER_BEGIN = 'B'
 
+    __instance = None
+
     def __init__(self):
+
+        if ArticleProcessor.__instance is not None:
+            raise RuntimeError('Call get_instance() instead')
         self.ner_model = build_model(configs.ner.ner_ontonotes_bert_mult, download=True)
+        ArticleProcessor.__instance = self
+
+    @staticmethod
+    def get_instance():
+        """Implements a singleton pattern based on notes in
+        https://medium.com/@rohitgupta2801/the-singleton-class-python-c9e5acfe106c
+        and ignoring the guidelines in https://python-patterns.guide/gang-of-four/singleton/
+        """
+        if ArticleProcessor.__instance is None:
+            ArticleProcessor()
+        return ArticleProcessor.__instance
 
     @staticmethod
     def get_fragment(fragment, ners, tokens, idx):
@@ -84,3 +101,5 @@ class ArticleProcessor:
                 output.append(phrase)
 
         return output
+
+proc = ArticleProcessor()
