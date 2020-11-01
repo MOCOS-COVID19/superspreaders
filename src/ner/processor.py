@@ -1,4 +1,5 @@
 import itertools
+import numpy as np
 from typing import List, Any
 
 from deeppavlov import configs, build_model
@@ -14,7 +15,6 @@ class ArticleProcessor:
     __instance = None
 
     def __init__(self):
-
         if ArticleProcessor.__instance is not None:
             raise RuntimeError('Call get_instance() instead')
         self.ner_model = build_model(configs.ner.ner_ontonotes_bert_mult, download=True)
@@ -76,30 +76,31 @@ class ArticleProcessor:
             length += 1
         return length
 
-    def prepare_for_classification(self, named_entity_type: str, sentences: List[str], offset: int = 16) -> List[Any]:
+    def prepare_for_classification(self, named_entity_name: str, sentences: List[str], offset: int = 16) -> List[Any]:
         """
         The function returns the whole named entity surrounded with 16 tokens from the left and 16 tokens from the right
-        :param named_entity_type:
+        :param named_entity_name:
         :param sentences:
         :param offset:
         :return:
         """
         output = []
         sentences = self.sanitize(sentences)
-        result = self.ner_model(sentences)
-        named_entity_type = conts.ner_beginning(named_entity_type)
-        named_entity_inside = conts.ner_inside(named_entity_type)
+        batch_size = 10
+        for batch in range(0, int(np.ceil(len(sentences) / batch_size))):
+            result = self.ner_model(sentences[batch * batch_size : np.min((len(sentences), batch_size * (batch + 1)))])
+            named_entity_begin_tag = conts.ner_beginning(named_entity_name)
+            named_entity_inside_tag = conts.ner_inside(named_entity_name)
 
-        all_tokens = [None] * offset + list(itertools.chain.from_iterable(result[0])) + [None] * offset
-        all_nes = [None] * offset + list(itertools.chain.from_iterable(result[1])) + [None] * offset
+            all_tokens = [None] * offset + list(itertools.chain.from_iterable(result[0])) + [None] * offset
+            all_nes = [None] * offset + list(itertools.chain.from_iterable(result[1])) + [None] * offset
 
-        for token_idx, (token, named_entity) in enumerate(zip(all_tokens, all_nes)):
+            for token_idx, (token, named_entity) in enumerate(zip(all_tokens, all_nes)):
 
-            if named_entity == named_entity_type:
-                length = self._calc_len_of_ne(named_entity_inside, all_nes, token_idx)
-                phrase = all_tokens[token_idx - offset:token_idx + offset + length]
-                output.append(phrase)
+                if named_entity == named_entity_begin_tag:
+                    length = self._calc_len_of_ne(named_entity_inside_tag, all_nes, token_idx)
+                    phrase = all_tokens[token_idx - offset:token_idx + offset + length]
+                    output.append(phrase)
 
         return output
 
-proc = ArticleProcessor()

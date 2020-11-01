@@ -54,7 +54,7 @@ def one_hot_encode(docs, offset=16):
     vec = OneHotEncoder(n_values=len(word_to_id))
     X = vec.fit_transform(token_ids)
 
-    return X, correct_samples
+    return X
 
 
 if __name__ == '__main__':

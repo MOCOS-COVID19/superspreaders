@@ -51,8 +51,11 @@ def get_links(session) -> List[en.URL]:
     return session.query(en.URL).all()
 
 
-def get_url_attributes() -> List[en.URLAttributes]:
+def get_url_attributes(id: int = None) -> List[en.URLAttributes]:
     with get_session() as session:
-        return session.query(en.URLAttributes).all()
+        url_attributes = session.query(en.URLAttributes)
+        if id is None:
+            return url_attributes.all()
+        return url_attributes.filter(en.URLAttributes.url_id == id).all()
 
 

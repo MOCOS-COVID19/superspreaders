@@ -79,7 +79,7 @@ class ClassificationTrainsetBuilder:
     def retrieve_named_entities_to_excel(cls, output_file: Path, articles: List[URLAttributes],
                                          ner_type: str = const.NER.CARDINAL) -> int:
         # article processor
-        proc = processor.ArticleProcessor()
+        proc = processor.ArticleProcessor.get_instance()
 
         # count the number of successfully processed articles
         successful = 0
@@ -129,8 +129,10 @@ class ClassificationTrainsetBuilder:
 
 def main():
     load_new_articles()
-    output_file = const.Classification.CARDINAL_PATH
-    all_articles = get_url_attributes()
+    # output_file = const.Classification.CARDINAL_PATH
+    id = 6
+    output_file = const.PROCESSED_DATA_DIR / f'article_{id}.xlsx'
+    all_articles = get_url_attributes(id)
     successful = ClassificationTrainsetBuilder().retrieve_named_entities_to_excel(output_file, all_articles)
     print(f'successfully retrieved classification clauses from {successful} articles out of {len(all_articles)}')
 
