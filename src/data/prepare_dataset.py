@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Union
 
+import csv
 import xlsxwriter.format
 from newspaper.article import ArticleDownloadState
 from tqdm import tqdm
@@ -76,8 +77,9 @@ class ClassificationTrainsetBuilder:
         return ([False] * offset) + ([True] * (length - 2 * offset)) + ([False] * offset)
 
     @classmethod
-    def retrieve_named_entities_to_excel(cls, output_file: Path, articles: List[URLAttributes],
-                                         ner_type: str = const.NER.CARDINAL) -> int:
+    def retrieve_named_entities_to_file(cls, xlsx_output_file: Path, csv_output_file: Path,
+                                        articles: List[URLAttributes],
+                                        ner_type: str = const.NER.CARDINAL) -> int:
         # article processor
         proc = processor.ArticleProcessor.get_instance()
 
@@ -85,10 +87,10 @@ class ClassificationTrainsetBuilder:
         successful = 0
 
         # list of problematic articles that need to be handled
-        problematic_articles = [5, 27]
+        offset = 16
 
         # output excel file
-        workbook = xlsxwriter.Workbook(output_file)
+        workbook = xlsxwriter.Workbook(xlsx_output_file)
         worksheet = workbook.add_worksheet()
         # headers
         header_format = workbook.add_format(cls.HEADER_FORMAT)
@@ -96,16 +98,17 @@ class ClassificationTrainsetBuilder:
             worksheet.write(0, i, header, header_format)
 
         # prepare the flags for formatting
-        offset = 16
         marking_format = workbook.add_format(cls.MARKING_FORMAT)
+
+        csvfile = csv_output_file.open('w+', newline='', encoding='utf-8')
 
         row = 1
         try:
+            # open csv file writer
+            csv_writer = csv.writer(csvfile, delimiter=',')
 
             # for each article
             for article in tqdm(articles):
-                if article.url_id in problematic_articles:
-                    continue
                 # get all relevant sentences
                 sentences = [article.title, article.description, article.maintext]
                 # process for classification i.e. for each ner_type get 16 tokens before and 16 after
@@ -117,6 +120,7 @@ class ClassificationTrainsetBuilder:
                         if len(rich_string) > 0:
                             worksheet.write(row, 0, article.url_id)
                             worksheet.write_rich_string(row, 1, *rich_string)
+                            csv_writer.writerow([article.url_id, *phrase])
                             row += 1
 
                     successful += 1
@@ -124,16 +128,16 @@ class ClassificationTrainsetBuilder:
                     logging.exception(f'Failure in : {article.url_id}, skipping')
         finally:
             workbook.close()
+            csvfile.close()
         return successful
 
 
 def main():
     load_new_articles()
-    # output_file = const.Classification.CARDINAL_PATH
-    id = 6
-    output_file = const.PROCESSED_DATA_DIR / f'article_{id}.xlsx'
-    all_articles = get_url_attributes(id)
-    successful = ClassificationTrainsetBuilder().retrieve_named_entities_to_excel(output_file, all_articles)
+    output_file = const.Classification.CARDINAL_PATH
+    csv_output_file = const.Classification.CARDINAL_CSV_PATH
+    all_articles = get_url_attributes()
+    successful = ClassificationTrainsetBuilder().retrieve_named_entities_to_file(output_file, csv_output_file, all_articles)
     print(f'successfully retrieved classification clauses from {successful} articles out of {len(all_articles)}')
 
 
