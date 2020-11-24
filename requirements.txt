@@ -11,4 +11,7 @@ pandas
 xlsxwriter
 tqdm
 xlrd
+numpy
+scikit-learn
+pystempel
 
