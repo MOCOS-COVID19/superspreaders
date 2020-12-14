@@ -5,11 +5,12 @@ import string
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score, StratifiedKFold
+from sklearn.model_selection import cross_val_score, StratifiedKFold, GridSearchCV
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import OneHotEncoder
 from stempel import StempelStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics import f1_score
 
 from src.constants import TrainingSet1
 
@@ -108,9 +109,24 @@ def logistic_regression_one_hot(X, y, stratified_k_fold: StratifiedKFold, text_o
     print(f'Average F1 macro score {np.mean(scores)}')
 
 
-def logistic_regression_tfidf(X, y, stratified_k_fold: StratifiedKFold, lower: bool = False,
-                              ngram_range=(1, 1)):
-    print(f'Logistic regresion with tfidf, lowercase: {lower}, ngram range: {ngram_range}')
+def train_test_split(X, y, train_size=0.75, stratify=True, random_state=None):
+    random = np.random.default_rng(random_state)
+    if not stratify:
+        raise ValueError('Only stratification is supported at the moment')
+    class0 = np.where(y == 0)[0]
+    class1 = np.where(y == 1)[0]
+    train0 = random.choice(class0, size=int(np.round(train_size * len(class0))))
+    train1 = random.choice(class1, size=int(np.round(train_size * len(class1))))
+    train = np.sort(np.concatenate((train0, train1)))
+    test0 = np.setdiff1d(class0, train0)
+    test1 = np.setdiff1d(class1, train1)
+    test = np.sort(np.concatenate((test0, test1)))
+    return [X[idx] for idx in train], [X[idx] for idx in test], y[train], y[test]
+
+
+def logistic_regression_tfidf(X, y, lower: bool = False,
+                              ngram_range=(1, 1), dual=False, random_state=2020):
+    print(f'Logistic regresion with tfidf, lowercase: {lower}, ngram range: {ngram_range}, dual: {dual}')
 
     class Joiner:
         @staticmethod
@@ -121,23 +137,49 @@ def logistic_regression_tfidf(X, y, stratified_k_fold: StratifiedKFold, lower: b
         def transform(texts):
             return [' '.join(text) for text in texts]
 
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.75, stratify=True, random_state=random_state)
+    stratified_k_fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
+    parameters = {'logisticregression__C': [1e-8, 1e-4, 0.1, 1, 2, 5, 8, 13, 21, 34, 50, 100, 1000]}
     classifier_pipeline = make_pipeline(Joiner(),
                                         TfidfVectorizer(lowercase=lower, ngram_range=ngram_range),
-                                        LogisticRegression(solver='lbfgs', C=25, max_iter=500, class_weight='balance'))
-    scores = cross_val_score(classifier_pipeline, X, y, cv=stratified_k_fold, scoring='f1_macro')
-    print(f'F1 macro scores: {scores}')
-    print(f'Average F1 macro score {np.mean(scores)}')
+                                        LogisticRegression(solver='lbfgs', class_weight='balanced'))  # , C=25, max_iter=500,
+    clf = GridSearchCV(classifier_pipeline, parameters, cv=stratified_k_fold, scoring='f1_macro',
+                       return_train_score=True)
+    # classifier_pipeline.fit(X_train, y_train)
+    clf.fit(X_train, y_train)
+    results = clf.cv_results_
+    print(results.get('params'))
+    print(results.get('mean_train_score'))
+    print(results.get('mean_test_score'))
+    print(clf.best_params_)
+    print(clf.best_score_)
+    print(f1_score(y_train, clf.predict(X_train), average='macro'))
+    # print(f1_score())
+
+    print(f1_score(y_test, clf.predict(X_test), average='macro'))
+
+    classifier_pipeline = make_pipeline(Joiner(),
+                                        TfidfVectorizer(lowercase=lower, ngram_range=ngram_range),
+                                        LogisticRegression(solver='lbfgs',
+                                                           class_weight='balanced', C=0.01))  # , max_iter=500,
+    classifier_pipeline.fit(X_train, y_train)
+    print(f1_score(y_train, classifier_pipeline.predict(X_train), average='macro'))
+    print(f1_score(y_test, classifier_pipeline.predict(X_test), average='macro'))
+
+    # scores = cross_val_score(classifier_pipeline, X, y, cv=stratified_k_fold, scoring='f1_macro')
+    # print(f'F1 macro scores: {scores}')
+    # print(f'Average F1 macro score {np.mean(scores)}')
 
 
 def main(X, y, offset=16):
     kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=2020)
     for lower in [False, True]:
-        logistic_regression_one_hot(X, y, kfold, offset, lower)
-        logistic_regression_one_hot(X, y, kfold, offset, lower, True)
-        logistic_regression_one_hot(X, y, kfold, offset, lower, True, True)
-        logistic_regression_tfidf(X, y, kfold, lower)
-        logistic_regression_tfidf(X, y, kfold, lower, ngram_range=(1, 3))
-        logistic_regression_tfidf(X, y, kfold, lower, ngram_range=(2, 5))
+        # logistic_regression_one_hot(X, y, kfold, offset, lower)
+        # logistic_regression_one_hot(X, y, kfold, offset, lower, True)
+        # logistic_regression_one_hot(X, y, kfold, offset, lower, True, True)
+        logistic_regression_tfidf(X, y, lower)
+        logistic_regression_tfidf(X, y, lower, ngram_range=(1, 3))
+        logistic_regression_tfidf(X, y, lower, ngram_range=(2, 5))
 
 
 def get_data(offset=16):
@@ -152,4 +194,5 @@ def get_data(offset=16):
 
 if __name__ == '__main__':
     X, y = get_data()
-    main(X, y)
+    X_train, y_train, X_test, y_test = train_test_split(X, y, train_size=0.75, stratify=True)
+    logistic_regression_tfidf(X, y)
