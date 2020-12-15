@@ -70,7 +70,7 @@ class SuperSpreadersOneHotEncoder:
         self.vec = None
         self.word_to_id = None
 
-    def fit_transform(self, tokens_docs, y):
+    def fit_transform(self, tokens_docs, y: None = None):
         # source: https://stackoverflow.com/questions/30361118/
         # one-hot-encoding-for-representing-corpus-sentences-in-python
 
